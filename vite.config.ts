@@ -7,8 +7,9 @@ export default defineConfig({
     outDir: 'dist',
   },
   define: {
-    // This allows the code to access process.env.API_KEY without crashing in the browser
-    // In Hostinger, you must set the environment variable in the dashboard.
+    // Inject process.env.API_KEY from the build environment (Hostinger)
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
+    // Prevent crash for other process.env accesses
     'process.env': {} 
   }
 });
