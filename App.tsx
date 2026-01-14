@@ -194,7 +194,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Persistent AI Chatbot (Only show if logged in and not admin/landing) */}
-      {user && currentView !== 'landing' && currentView !== 'onboarding' && currentView !== 'admin' && (
+      {user && currentView !== 'landing' && currentView !== 'onboarding' && (
         <ChatBot userName={user.name} />
       )}
     </div>
