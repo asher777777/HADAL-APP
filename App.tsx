@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>('loading');
   const [days, setDays] = useState<Record<number, DayContent>>({});
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   
   // Program Settings State
   const [programSettings, setProgramSettings] = useState<ProgramSettings>({
@@ -29,35 +30,44 @@ const App: React.FC = () => {
   const fetchDays = async () => {
     try {
       const res = await fetch('/api/days');
-      if (res.ok) {
+      const contentType = res.headers.get("content-type");
+      
+      // Check if response is OK and specifically JSON
+      if (res.ok && contentType && contentType.includes("application/json")) {
         const data = await res.json();
-        // If empty DB, fallback to MOCK
         if (Object.keys(data).length === 0) {
           setDays(MOCK_DAYS);
         } else {
           setDays(data);
+          setIsOfflineMode(false);
         }
       } else {
-        console.warn('API Error, using mock data');
+        console.warn('API returned non-JSON response (likely 404 or HTML). Using offline data.');
         setDays(MOCK_DAYS);
+        setIsOfflineMode(true);
       }
     } catch (error) {
-      console.error('Failed to fetch days', error);
-      setDays(MOCK_DAYS); // Fallback for offline/dev without server
+      console.error('Network error fetching days:', error);
+      setDays(MOCK_DAYS);
+      setIsOfflineMode(true);
     }
   };
 
   const syncUserToDB = async (userData: UserProfile) => {
+    if (isOfflineMode) return userData;
+
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
-      const data = await res.json();
-      if (data.success && data.user) {
-        // Return the full user object from DB (which includes roles, IDs etc)
-        return data.user;
+      const contentType = res.headers.get("content-type");
+      if (res.ok && contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          return data.user;
+        }
       }
     } catch (error) {
       console.error("Failed to sync user", error);
@@ -66,6 +76,8 @@ const App: React.FC = () => {
   };
 
   const syncProgressToDB = async (userId: number, dayId: number) => {
+    if (isOfflineMode) return;
+
     try {
       await fetch('/api/progress', {
         method: 'POST',
@@ -114,7 +126,6 @@ const App: React.FC = () => {
 
   const handleDaysUpdate = (updatedDays: Record<number, DayContent>) => {
     setDays(updatedDays);
-    // In a real app, AdminPanel would call an API endpoint to save these
     localStorage.setItem('metamorphosis_content', JSON.stringify(updatedDays));
   };
 
@@ -129,7 +140,6 @@ const App: React.FC = () => {
   };
 
   const handleOnboardingComplete = async (newUser: UserProfile) => {
-    // Save to DB immediately
     const syncedUser = await syncUserToDB(newUser);
     handleUserUpdate(syncedUser);
     setCurrentView('dashboard');
@@ -142,7 +152,6 @@ const App: React.FC = () => {
   const handleTaskComplete = async (dayId: number) => {
     if (!user) return;
     
-    // Save to DB if user has ID
     if (user.id) {
       await syncProgressToDB(user.id, dayId);
     }
@@ -188,20 +197,15 @@ const App: React.FC = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
       
-      // Create a partial profile from Google data
       const partialProfile: UserProfile = {
         ...INITIAL_USER_STATE,
         name: googleUser.displayName || 'אורח',
         email: googleUser.email || '',
         profileImage: googleUser.photoURL || undefined,
-        // We assume other fields are empty for now, database will merge if exists
       };
 
-      // Sync with DB (will find by email or create new)
       const syncedUser = await syncUserToDB(partialProfile);
-      
       handleUserUpdate(syncedUser);
-      
       setCurrentView('dashboard');
 
     } catch (error) {
@@ -239,7 +243,14 @@ const App: React.FC = () => {
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-100 to-transparent -z-10" />
       
-      <main className="container mx-auto max-w-4xl relative z-10 h-full">
+      {/* Offline Mode Indicator */}
+      {isOfflineMode && (
+        <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 px-2 absolute top-0 w-full z-50">
+          מצב הדגמה (ללא חיבור לשרת)
+        </div>
+      )}
+
+      <main className="container mx-auto max-w-4xl relative z-10 h-full pt-6">
         {currentView === 'landing' && (
           <LandingPage 
             onStartRegistration={() => setCurrentView('onboarding')}

@@ -1,3 +1,4 @@
+
 import { DayContent, UserProfile } from './types';
 
 export const INITIAL_USER_STATE: UserProfile = {
@@ -53,6 +54,37 @@ export const MOCK_DAYS: Record<number, DayContent> = {
     videoUrl: "https://www.youtube.com/embed/jfKfPfyJRdk", 
     writingPrompt: "תארו רגע אחד מהיום האחרון בו הרגשתם נוכחות מלאה ללא טלפון. מה הרגשתם? מה ראיתם?",
     guidedImageryAudioUrl: "https://actions.google.com/sounds/v1/nature/forest_morning.ogg",
+    resources: []
+  },
+  3: {
+    id: 3,
+    title: "הקשבה פנימית",
+    description: "ללמוד להקשיב לקול הפנימי במקום לרעש החיצוני.",
+    htmlContent: `
+      <h2>השקט שאחרי הסערה</h2>
+      <p>כשאנחנו מכבים את המסכים, לעיתים עולה שקט מפחיד. היום נלמד איך להפוך את השקט הזה למקור כוח.</p>
+    `,
+    videoUrl: "https://www.youtube.com/embed/tgbNymZ7vqY",
+    writingPrompt: "שבו 5 דקות בשקט מוחלט. אלו מחשבות עלו בראשכם? כתבו אותן ללא שיפוט.",
+    guidedImageryAudioUrl: "https://actions.google.com/sounds/v1/birds/birds_forest_morning.ogg",
+    resources: []
+  },
+  4: {
+    id: 4,
+    title: "בניית הרגלים חדשים",
+    description: "איך מטמיעים שינוי לאורך זמן?",
+    videoUrl: "https://www.youtube.com/embed/dummy",
+    writingPrompt: "בחרו הרגל דיגיטלי אחד שתרצו לשנות, ופרטו 3 צעדים מעשיים לביצוע השינוי השבוע.",
+    guidedImageryAudioUrl: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
+    resources: []
+  },
+  5: {
+    id: 5,
+    title: "חיבור לטבע ולסביבה",
+    description: "העולם האמיתי עשיר יותר מכל מסך.",
+    videoUrl: "https://www.youtube.com/embed/dummy",
+    writingPrompt: "צאו החוצה ל-10 דקות ללא טלפון. תארו 5 פרטים שראיתם ושמעתם שלא הייתם שמים לב אליהם אחרת.",
+    guidedImageryAudioUrl: "https://actions.google.com/sounds/v1/nature/wind_in_trees.ogg",
     resources: []
   }
 };

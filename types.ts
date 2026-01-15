@@ -1,4 +1,20 @@
+
 export type ViewState = 'loading' | 'landing' | 'onboarding' | 'info' | 'dashboard' | 'task' | 'admin';
+
+// Extend Window interface for runtime environment variables
+declare global {
+  interface Window {
+    __ENV__?: {
+      FIREBASE_API_KEY?: string;
+      FIREBASE_AUTH_DOMAIN?: string;
+      FIREBASE_PROJECT_ID?: string;
+      FIREBASE_STORAGE_BUCKET?: string;
+      FIREBASE_MESSAGING_SENDER_ID?: string;
+      FIREBASE_APP_ID?: string;
+      API_KEY?: string; // For Gemini
+    };
+  }
+}
 
 export interface SubscriptionPlan {
   id: number;
