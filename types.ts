@@ -1,20 +1,32 @@
 export type ViewState = 'loading' | 'landing' | 'onboarding' | 'info' | 'dashboard' | 'task' | 'admin';
 
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  price: number;
+  durationDays: number;
+  description: string;
+}
+
 export interface UserProfile {
   id?: number; // Database ID
   name: string;
   email: string;
   phone?: string;
-  profileImage?: string; // New field for user image (Base64 or URL)
-  // Demographics
+  profileImage?: string; // Base64 or URL
+  
+  // Demographics & Onboarding Data (Now explicit in DB)
   ageRange?: string;
   gender?: 'male' | 'female' | 'other';
-  // Professional
   workplace?: string;
-  role?: string;
-  // Habits
+  role?: string; // Profession role
   dailyScreenTime?: string;
   reductionGoal?: string;
+  
+  // System Roles & Subscription
+  systemRole: 'user' | 'admin';
+  subscriptionPlanId: number;
+  subscriptionPlanName?: string; // For display
   
   goals: string[];
   joinDate: string;

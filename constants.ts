@@ -11,6 +11,8 @@ export const INITIAL_USER_STATE: UserProfile = {
   dailyScreenTime: '',
   reductionGoal: '',
   joinDate: new Date().toISOString(),
+  systemRole: 'user',
+  subscriptionPlanId: 1,
   progress: {
     currentDay: 1,
     completedDays: [],
