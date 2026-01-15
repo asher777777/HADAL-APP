@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Onboarding } from './components/Onboarding';
 import { LandingPage } from './components/LandingPage';
@@ -9,7 +10,7 @@ import { UserProfile, ViewState, DayContent, Automation, ProgramSettings } from 
 import { ChatBot } from './components/ChatBot';
 import { MOCK_DAYS, INITIAL_USER_STATE } from './constants';
 import { auth, googleProvider } from './firebaseConfig';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signOut } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -170,7 +171,7 @@ const App: React.FC = () => {
     if (window.confirm("האם אתה בטוח שברצונך לצאת מהמערכת?")) {
       setUser(null);
       localStorage.removeItem('metamorphosis_user');
-      auth.signOut().catch(console.error); // Sign out from Firebase too
+      signOut(auth).catch(console.error); // Sign out from Firebase too
       setCurrentView('landing');
     }
   };
