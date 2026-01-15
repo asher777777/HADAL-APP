@@ -127,7 +127,7 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// POST: Create or Update User (Onboarding)
+// POST: Create or Update User (Onboarding / Login)
 app.post('/api/users', async (req, res) => {
     // Destructure all specific fields from the form
     const { 
@@ -138,24 +138,37 @@ app.post('/api/users', async (req, res) => {
     
     // Default fallback values
     const cleanPhone = phone || '';
+    const cleanEmail = email || '';
     
     try {
-        // Check if user exists by phone
-        const [existing] = await pool.query('SELECT id FROM users WHERE phone = ?', [cleanPhone]);
+        // Check if user exists by phone OR email
+        // Note: We use specific logic to avoid matching empty strings if user hasn't provided phone yet
+        const [existing] = await pool.query(
+            'SELECT id FROM users WHERE (phone = ? AND phone != "") OR (email = ? AND email != "")', 
+            [cleanPhone, cleanEmail]
+        );
         
         let userId;
         if (existing.length > 0) {
             userId = existing[0].id;
             // Update existing user with new profile data
+            // We use COALESCE in SQL or logic here to avoid overwriting existing data with nulls if not provided
             await pool.query(`
                 UPDATE users SET 
-                    name = ?, email = ?, profile_image = ?,
-                    gender = ?, age_range = ?, workplace = ?, profession_role = ?,
-                    daily_screen_time = ?, reduction_goal = ?,
+                    name = COALESCE(?, name), 
+                    email = COALESCE(?, email), 
+                    phone = COALESCE(?, phone),
+                    profile_image = COALESCE(?, profile_image),
+                    gender = COALESCE(?, gender), 
+                    age_range = COALESCE(?, age_range), 
+                    workplace = COALESCE(?, workplace), 
+                    profession_role = COALESCE(?, profession_role),
+                    daily_screen_time = COALESCE(?, daily_screen_time), 
+                    reduction_goal = COALESCE(?, reduction_goal),
                     profile_json = ?
                 WHERE id = ?`,
                 [
-                    name, email, profileImage,
+                    name, email, cleanPhone, profileImage,
                     gender, ageRange, workplace, role, 
                     dailyScreenTime, reductionGoal,
                     JSON.stringify(otherProfileData), userId
@@ -171,7 +184,7 @@ app.post('/api/users', async (req, res) => {
                     profile_json
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    name, email, cleanPhone, profileImage,
+                    name || 'אורח', cleanEmail, cleanPhone, profileImage,
                     gender, ageRange, workplace, role,
                     dailyScreenTime, reductionGoal,
                     JSON.stringify(otherProfileData)

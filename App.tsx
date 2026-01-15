@@ -7,7 +7,9 @@ import { DailyTask } from './components/DailyTask';
 import { AdminPanel } from './components/AdminPanel';
 import { UserProfile, ViewState, DayContent, Automation, ProgramSettings } from './types';
 import { ChatBot } from './components/ChatBot';
-import { MOCK_DAYS } from './constants';
+import { MOCK_DAYS, INITIAL_USER_STATE } from './constants';
+import { auth, googleProvider } from './firebaseConfig';
+import { signInWithPopup } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -52,8 +54,9 @@ const App: React.FC = () => {
         body: JSON.stringify(userData)
       });
       const data = await res.json();
-      if (data.success && data.userId) {
-        return { ...userData, id: data.userId };
+      if (data.success && data.user) {
+        // Return the full user object from DB (which includes roles, IDs etc)
+        return data.user;
       }
     } catch (error) {
       console.error("Failed to sync user", error);
@@ -167,12 +170,39 @@ const App: React.FC = () => {
     if (window.confirm("האם אתה בטוח שברצונך לצאת מהמערכת?")) {
       setUser(null);
       localStorage.removeItem('metamorphosis_user');
+      auth.signOut().catch(console.error); // Sign out from Firebase too
       setCurrentView('landing');
     }
   };
 
-  const handleGoogleLogin = () => {
-    alert("מתחבר עם גוגל...");
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const googleUser = result.user;
+      
+      // Create a partial profile from Google data
+      const partialProfile: UserProfile = {
+        ...INITIAL_USER_STATE,
+        name: googleUser.displayName || 'אורח',
+        email: googleUser.email || '',
+        profileImage: googleUser.photoURL || undefined,
+        // We assume other fields are empty for now, database will merge if exists
+      };
+
+      // Sync with DB (will find by email or create new)
+      const syncedUser = await syncUserToDB(partialProfile);
+      
+      handleUserUpdate(syncedUser);
+      
+      // Decision: If phone/role are missing, it might be a new user who needs onboarding.
+      // But for now, we send them to dashboard as requested to "Login".
+      // You could check `if (!syncedUser.phone) setCurrentView('onboarding')` here.
+      setCurrentView('dashboard');
+
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      alert("התחברות נכשלה. אנא נסה שנית.");
+    }
   };
 
   if (currentView === 'loading') {
