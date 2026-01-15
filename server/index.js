@@ -1,9 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,13 +33,11 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/days', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM daily_content ORDER BY day_id ASC');
-        // המרת שדות ה-JSON חזרה לאובייקטים
         const days = {};
         rows.forEach(row => {
             days[row.day_id] = {
                 ...row,
                 resources: row.resources_json ? row.resources_json : [],
-                // Mapping fields to match frontend types if needed
                 id: row.day_id,
                 guidedImageryAudioUrl: row.guided_imagery_audio_url,
                 videoUrl: row.video_url,
@@ -54,19 +57,17 @@ app.post('/api/users', async (req, res) => {
     const { name, email, phone, ...profileData } = req.body;
     
     try {
-        // Check if user exists by phone (assuming phone is unique identifier for this app flow)
+        // Check if user exists
         const [existing] = await pool.query('SELECT id FROM users WHERE phone = ?', [phone]);
         
         let userId;
         if (existing.length > 0) {
             userId = existing[0].id;
-            // Update existing
             await pool.query(
                 'UPDATE users SET name = ?, email = ?, profile_json = ? WHERE id = ?',
                 [name, email, JSON.stringify(profileData), userId]
             );
         } else {
-            // Create new
             const [result] = await pool.query(
                 'INSERT INTO users (name, email, phone, profile_json) VALUES (?, ?, ?, ?)',
                 [name, email, phone, JSON.stringify(profileData)]
@@ -76,7 +77,7 @@ app.post('/api/users', async (req, res) => {
         
         res.json({ success: true, userId, message: 'User saved successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('User save error:', error);
         res.status(500).json({ error: 'Failed to save user' });
     }
 });
@@ -96,6 +97,16 @@ app.post('/api/progress', async (req, res) => {
         console.error(error);
         res.status(500).json({ error: 'Failed to update progress' });
     }
+});
+
+// Serve Frontend in Production (Hostinger)
+// Assuming 'dist' is in the parent directory of 'server'
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// Handle React Routing, return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // Start Server

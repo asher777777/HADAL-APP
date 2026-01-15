@@ -1,6 +1,7 @@
 export type ViewState = 'loading' | 'landing' | 'onboarding' | 'info' | 'dashboard' | 'task' | 'admin';
 
 export interface UserProfile {
+  id?: number; // Database ID
   name: string;
   email: string;
   phone?: string;

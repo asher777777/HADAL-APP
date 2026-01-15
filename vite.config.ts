@@ -6,10 +6,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   define: {
-    // Inject process.env.API_KEY from the build environment (Hostinger)
+    // Inject process.env.API_KEY from the build environment
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
-    // Prevent crash for other process.env accesses
     'process.env': {} 
   }
 });

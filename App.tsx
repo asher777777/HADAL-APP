@@ -12,9 +12,9 @@ import { MOCK_DAYS } from './constants';
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>('loading');
-  const [days, setDays] = useState<Record<number, DayContent>>(MOCK_DAYS);
+  const [days, setDays] = useState<Record<number, DayContent>>({});
   
-  // New State for Program & Automations
+  // Program Settings State
   const [programSettings, setProgramSettings] = useState<ProgramSettings>({
     title: 'מסע המטמורפוזה',
     description: 'תוכנית יומית לצמיחה אישית והתנתקות מרעשים דיגיטליים',
@@ -22,39 +22,85 @@ const App: React.FC = () => {
   });
   const [automations, setAutomations] = useState<Automation[]>([]);
 
-  // Load user and days from local storage on mount
-  useEffect(() => {
-    // Load Content
-    const savedDays = localStorage.getItem('metamorphosis_content');
-    if (savedDays) {
-      try {
-        setDays(JSON.parse(savedDays));
-      } catch (e) {
-        console.error("Failed to parse days content", e);
+  // --- API Helpers ---
+  const fetchDays = async () => {
+    try {
+      const res = await fetch('/api/days');
+      if (res.ok) {
+        const data = await res.json();
+        // If empty DB, fallback to MOCK
+        if (Object.keys(data).length === 0) {
+          setDays(MOCK_DAYS);
+        } else {
+          setDays(data);
+        }
+      } else {
+        console.warn('API Error, using mock data');
+        setDays(MOCK_DAYS);
       }
+    } catch (error) {
+      console.error('Failed to fetch days', error);
+      setDays(MOCK_DAYS); // Fallback for offline/dev without server
     }
-    
-    // Load Settings
-    const savedSettings = localStorage.getItem('metamorphosis_settings');
-    if (savedSettings) setProgramSettings(JSON.parse(savedSettings));
+  };
 
-    // Load Automations
-    const savedAutomations = localStorage.getItem('metamorphosis_automations');
-    if (savedAutomations) setAutomations(JSON.parse(savedAutomations));
+  const syncUserToDB = async (userData: UserProfile) => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      const data = await res.json();
+      if (data.success && data.userId) {
+        return { ...userData, id: data.userId };
+      }
+    } catch (error) {
+      console.error("Failed to sync user", error);
+    }
+    return userData;
+  };
 
-    // Load User
-    const savedUser = localStorage.getItem('metamorphosis_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setCurrentView('dashboard');
-      } catch (e) {
-        console.error("Failed to parse user data", e);
+  const syncProgressToDB = async (userId: number, dayId: number) => {
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, dayId })
+      });
+    } catch (error) {
+      console.error("Failed to sync progress", error);
+    }
+  };
+
+  // --- Initial Load ---
+  useEffect(() => {
+    const initApp = async () => {
+      // 1. Load Content
+      await fetchDays();
+      
+      // 2. Load Local Settings/User
+      const savedSettings = localStorage.getItem('metamorphosis_settings');
+      if (savedSettings) setProgramSettings(JSON.parse(savedSettings));
+
+      const savedAutomations = localStorage.getItem('metamorphosis_automations');
+      if (savedAutomations) setAutomations(JSON.parse(savedAutomations));
+
+      const savedUser = localStorage.getItem('metamorphosis_user');
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+          setCurrentView('dashboard');
+        } catch (e) {
+          console.error("Failed to parse user data", e);
+          setCurrentView('landing');
+        }
+      } else {
         setCurrentView('landing');
       }
-    } else {
-      setCurrentView('landing');
-    }
+    };
+    
+    initApp();
   }, []);
 
   const handleUserUpdate = (updatedUser: UserProfile) => {
@@ -64,6 +110,7 @@ const App: React.FC = () => {
 
   const handleDaysUpdate = (updatedDays: Record<number, DayContent>) => {
     setDays(updatedDays);
+    // In a real app, AdminPanel would call an API endpoint to save these
     localStorage.setItem('metamorphosis_content', JSON.stringify(updatedDays));
   };
 
@@ -77,8 +124,10 @@ const App: React.FC = () => {
     localStorage.setItem('metamorphosis_automations', JSON.stringify(newAutomations));
   };
 
-  const handleOnboardingComplete = (newUser: UserProfile) => {
-    handleUserUpdate(newUser);
+  const handleOnboardingComplete = async (newUser: UserProfile) => {
+    // Save to DB immediately
+    const syncedUser = await syncUserToDB(newUser);
+    handleUserUpdate(syncedUser);
     setCurrentView('dashboard');
   };
 
@@ -86,9 +135,14 @@ const App: React.FC = () => {
     setCurrentView('task');
   };
 
-  const handleTaskComplete = (dayId: number) => {
+  const handleTaskComplete = async (dayId: number) => {
     if (!user) return;
     
+    // Save to DB if user has ID
+    if (user.id) {
+      await syncProgressToDB(user.id, dayId);
+    }
+
     const updatedUser = {
       ...user,
       progress: {
@@ -118,10 +172,7 @@ const App: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Simulated Google Login
-    // In a real app, this would trigger OAuth
     alert("מתחבר עם גוגל...");
-    // If we had a "remembered" user or if this was real, we'd set currentView('dashboard')
   };
 
   if (currentView === 'loading') {
@@ -194,7 +245,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Persistent AI Chatbot (Only show if logged in and not admin/landing) */}
+      {/* Persistent AI Chatbot */}
       {user && currentView !== 'landing' && currentView !== 'onboarding' && (
         <ChatBot userName={user.name} />
       )}
