@@ -170,6 +170,7 @@ const App: React.FC = () => {
           <Onboarding 
             onComplete={handleOnboardingComplete} 
             onAdminLogin={handleEnterAdmin}
+            onExit={() => setCurrentView('landing')}
           />
         )}
 
