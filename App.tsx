@@ -171,12 +171,19 @@ const App: React.FC = () => {
     if (window.confirm("האם אתה בטוח שברצונך לצאת מהמערכת?")) {
       setUser(null);
       localStorage.removeItem('metamorphosis_user');
-      signOut(auth).catch(console.error); // Sign out from Firebase too
+      if (auth) {
+        signOut(auth).catch(console.error);
+      }
       setCurrentView('landing');
     }
   };
 
   const handleGoogleLogin = async () => {
+    if (!auth || !googleProvider) {
+      alert("שגיאת מערכת: חיבור ל-Firebase לא הוגדר כראוי (חסר API Key).");
+      return;
+    }
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
@@ -195,9 +202,6 @@ const App: React.FC = () => {
       
       handleUserUpdate(syncedUser);
       
-      // Decision: If phone/role are missing, it might be a new user who needs onboarding.
-      // But for now, we send them to dashboard as requested to "Login".
-      // You could check `if (!syncedUser.phone) setCurrentView('onboarding')` here.
       setCurrentView('dashboard');
 
     } catch (error) {

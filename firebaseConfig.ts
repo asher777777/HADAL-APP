@@ -1,6 +1,5 @@
-
-import * as firebaseApp from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, Auth } from "firebase/auth";
 
 // Firebase configuration
 // Strictly uses environment variables. 
@@ -14,10 +13,26 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-// Check if app is already initialized to avoid duplicate app errors in dev
-// Using type casting to bypass TS errors where it claims exported members don't exist
-const app = (firebaseApp as any).getApps().length === 0 ? (firebaseApp as any).initializeApp(firebaseConfig) : (firebaseApp as any).getApp();
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let googleProvider: GoogleAuthProvider | undefined;
 
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+// Validate Config to prevent crash
+if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "undefined") {
+  try {
+    // Initialize Firebase
+    // Check if app is already initialized to avoid duplicate app errors in dev
+    app = getApps().length === 0 
+      ? initializeApp(firebaseConfig) 
+      : getApp();
+    
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+  } catch (error) {
+    console.error("Firebase Initialization Failed:", error);
+  }
+} else {
+  console.warn("Firebase API Key is missing. Auth features will be disabled. Check your .env file.");
+}
+
+export { auth, googleProvider };

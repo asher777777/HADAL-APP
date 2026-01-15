@@ -3,15 +3,13 @@ import { GoogleGenAI, Chat } from "@google/genai";
 let chatSession: Chat | null = null;
 let genAI: GoogleGenAI | null = null;
 
-const API_KEY = process.env.API_KEY;
-
 export const initializeChat = (userName: string) => {
-  if (!API_KEY) {
+  if (!process.env.API_KEY) {
     console.warn("Gemini API Key is missing");
     return;
   }
 
-  genAI = new GoogleGenAI({ apiKey: API_KEY });
+  genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const systemInstruction = `
     אתה עוזר וירטואלי חכם ואמפתי באפליקציית "חדל קשקשת ברשת", חלק ממיזם "מטמורפוזה יהודית".
