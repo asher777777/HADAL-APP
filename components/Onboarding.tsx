@@ -68,8 +68,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onAdminLogin
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // 1. Visual feedback immediately (Temporary URL)
       const imageUrl = URL.createObjectURL(file);
       setHeaderImage(imageUrl);
+
+      // 2. Convert to Base64 for Persistence
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        // Update the form data with the actual image string
+        setFormData(prev => ({ ...prev, profileImage: base64String }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 

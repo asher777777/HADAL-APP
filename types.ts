@@ -5,6 +5,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
+  profileImage?: string; // New field for user image (Base64 or URL)
   // Demographics
   ageRange?: string;
   gender?: 'male' | 'female' | 'other';

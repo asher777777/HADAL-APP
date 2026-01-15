@@ -24,8 +24,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, days, programTitle, 
       <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
         <div className="flex items-center gap-4 z-10">
            <img 
-              src="https://res.cloudinary.com/dv1z6p82q/image/upload/v1740924976/sheep-logo_copy_rmq5l1.png" // Placeholder - Ensure asset exists
-              alt="Logo" 
+              src={user.profileImage || "https://res.cloudinary.com/dv1z6p82q/image/upload/v1740924976/sheep-logo_copy_rmq5l1.png"} 
+              alt="Profile" 
               className="w-16 h-16 rounded-full border-2 border-indigo-100 shadow-sm object-cover"
             />
            <div>
