@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('loading');
   const [days, setDays] = useState<Record<number, DayContent>>({});
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Program Settings State
   const [programSettings, setProgramSettings] = useState<ProgramSettings>({
@@ -188,11 +189,28 @@ const App: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
+    // 1. Check if Firebase is actually configured
     if (!auth || !googleProvider) {
-      alert("שגיאת מערכת: חיבור ל-Firebase לא הוגדר כראוי (חסר API Key).");
-      return;
+      const confirmDemo = window.confirm("חיבור ל-Firebase לא הוגדר או נכשל. האם להמשיך במצב 'אורח' (דמו) ללא שמירה בענן?");
+      
+      if (confirmDemo) {
+        // Create Mock User
+        const mockUser: UserProfile = {
+          ...INITIAL_USER_STATE,
+          name: 'אורח זמני',
+          email: 'guest@demo.local',
+          profileImage: 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+        };
+        handleUserUpdate(mockUser);
+        setIsOfflineMode(true);
+        setCurrentView('dashboard');
+        return;
+      } else {
+        return;
+      }
     }
 
+    // 2. Try Real Login
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
@@ -208,9 +226,26 @@ const App: React.FC = () => {
       handleUserUpdate(syncedUser);
       setCurrentView('dashboard');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google Login Error:", error);
-      alert("התחברות נכשלה. אנא נסה שנית.");
+      let errorMsg = "התחברות נכשלה. אנא נסה שנית.";
+      
+      // Handle missing API Key error specifically if it bubbles up
+      if (error?.code === 'auth/api-key-not-valid' || error?.message?.includes('api key')) {
+         errorMsg = "שגיאת קונפיגורציה: מפתח API אינו תקין. נא לבדוק את קובץ config.js בשרת.";
+      }
+
+      const confirmDemo = window.confirm(`${errorMsg}\n\nהאם תרצה להמשיך במצב אורח (דמו) בינתיים?`);
+      if (confirmDemo) {
+         const mockUser: UserProfile = {
+          ...INITIAL_USER_STATE,
+          name: 'אורח (ללא רשת)',
+          email: 'offline@demo.local'
+        };
+        handleUserUpdate(mockUser);
+        setIsOfflineMode(true);
+        setCurrentView('dashboard');
+      }
     }
   };
 
@@ -245,8 +280,8 @@ const App: React.FC = () => {
       
       {/* Offline Mode Indicator */}
       {isOfflineMode && (
-        <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 px-2 absolute top-0 w-full z-50">
-          מצב הדגמה (ללא חיבור לשרת)
+        <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 px-2 absolute top-0 w-full z-50 shadow-sm border-b border-amber-200">
+          ⚠️ מצב הדגמה / אופליין (הנתונים נשמרים מקומית בלבד)
         </div>
       )}
 
@@ -291,7 +326,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Persistent AI Chatbot */}
+      {/* Persistent AI Chatbot - Only show if not landing/onboarding */}
       {user && currentView !== 'landing' && currentView !== 'onboarding' && (
         <ChatBot userName={user.name} />
       )}

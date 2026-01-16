@@ -1,4 +1,4 @@
-import * as firebaseApp from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import type { Auth } from "firebase/auth";
 
@@ -30,10 +30,10 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "undefined") {
   try {
     // Initialize Firebase
     // Check if app is already initialized to avoid duplicate app errors in dev
-    // Using namespace import access to ensure compatibility with different module resolutions
-    app = firebaseApp.getApps().length === 0 
-      ? firebaseApp.initializeApp(firebaseConfig) 
-      : firebaseApp.getApp();
+    // Using named imports access to ensure compatibility with different module resolutions
+    app = getApps().length === 0 
+      ? initializeApp(firebaseConfig) 
+      : getApp();
     
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
